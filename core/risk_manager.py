@@ -85,13 +85,14 @@ class RiskManager:
         self._daily.last_trade_time = time.time()
         self._total_pnl += pnl
 
+        self.capital += pnl
+
         if pnl >= 0:
             self._daily.wins += 1
             self._daily.consecutive_losses = 0
         else:
             self._daily.losses += 1
             self._daily.consecutive_losses += 1
-            self.capital += pnl
             if self._daily.consecutive_losses >= self.config.max_consecutive_losses:
                 logger.warning(f"⚠️ {self._daily.consecutive_losses} consecutive losses — cooldown")
 
@@ -103,10 +104,17 @@ class RiskManager:
     def get_status(self) -> dict:
         self._reset_daily_if_needed()
         can, reason = self.can_trade()
+        in_cooldown = time.time() < self._daily.cooldown_until
+        daily_loss_pct = 0.0
+        if self.capital > 0:
+            daily_loss_pct = abs(min(0, self._daily.total_pnl)) / self.capital * 100
+
         return {
             "can_trade": can, "reason": reason, "capital": self.capital,
             "daily_trades": self._daily.trades, "daily_pnl": self._daily.total_pnl,
+            "daily_loss_pct": daily_loss_pct,
             "consecutive_losses": self._daily.consecutive_losses,
-            "in_cooldown": time.time() < self._daily.cooldown_until,
+            "in_cooldown": in_cooldown,
+            "cooldown_active": in_cooldown,
             "total_pnl": self._total_pnl,
         }

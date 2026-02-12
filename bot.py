@@ -133,6 +133,7 @@ class BTCPredictionBot:
             # arb check has been removed — the scanner handles it autonomously.
 
             # 6b. Hedge check (if enabled)
+            direction = decision.direction.value
             open_trades = self.polymarket.get_trade_records()
             hedges = self.edge.check_hedge(
                 open_trades=open_trades,
@@ -160,7 +161,6 @@ class BTCPredictionBot:
                         })
 
             # 7. Execute directional trade
-            direction = decision.direction.value
             size = self.risk_manager.calculate_position_size(decision.confidence)
             if size <= 0:
                 return
